@@ -4,24 +4,19 @@
 #include <math.h>
 #include <time.h>
 
-// Limite para executar a força bruta.
-// O Greedy continua podendo executar com mais cidades.
 #define MAX_BRUTE_FORCE_CITIES 12
 
-// Estrutura para representar uma cidade
 typedef struct {
     double x;
     double y;
 } City;
 
-// Estrutura para representar uma aresta
 typedef struct {
     int u;
     int v;
     double cost;
 } Edge;
 
-// Compara duas arestas para o qsort
 int compare_edges(const void *a, const void *b) {
     const Edge *edgeA = a;
     const Edge *edgeB = b;
@@ -29,14 +24,12 @@ int compare_edges(const void *a, const void *b) {
     if (edgeA->cost < edgeB->cost) return -1;
     if (edgeA->cost > edgeB->cost) return 1;
 
-    // Desempate determinístico
     if (edgeA->u != edgeB->u)
         return (edgeA->u > edgeB->u) - (edgeA->u < edgeB->u);
 
     return (edgeA->v > edgeB->v) - (edgeA->v < edgeB->v);
 }
 
-// Calcula a distância euclidiana
 double euclidean_distance(City a, City b) {
     double dx = a.x - b.x;
     double dy = a.y - b.y;
@@ -44,7 +37,6 @@ double euclidean_distance(City a, City b) {
     return sqrt(dx * dx + dy * dy);
 }
 
-// Find com compressão de caminho
 int find(int parent[], int i) {
     if (parent[i] != i)
         parent[i] = find(parent, parent[i]);
@@ -52,7 +44,6 @@ int find(int parent[], int i) {
     return parent[i];
 }
 
-// Union com rank
 void union_sets(int parent[], int rank[], int root_u, int root_v) {
     if (rank[root_u] < rank[root_v]) {
         parent[root_u] = root_v;
@@ -66,7 +57,6 @@ void union_sets(int parent[], int rank[], int root_u, int root_v) {
     }
 }
 
-// Gera todas as arestas possíveis
 Edge *generate_edges(City cities[], int n, int *edge_count) {
     size_t max_edges = (size_t)n * (n - 1) / 2;
 
@@ -97,7 +87,6 @@ Edge *generate_edges(City cities[], int n, int *edge_count) {
     return edges;
 }
 
-// Algoritmo Greedy por Arestas
 int tsp_cheapest_greedy(int n, Edge edges[],
                         int edge_count, Edge tour[],
                         double *total_cost) {
@@ -131,7 +120,6 @@ int tsp_cheapest_greedy(int n, Edge edges[],
         int root_u = find(parent, u);
         int root_v = find(parent, v);
 
-        // Conecta componentes diferentes ou fecha o ciclo final
         if (root_u != root_v || tour_count == n - 1) {
 
             tour[tour_count] = edges[i];
@@ -157,7 +145,6 @@ int tsp_cheapest_greedy(int n, Edge edges[],
     return tour_count == n;
 }
 
-// Reconstrói a rota a partir das arestas escolhidas
 int reconstruct_tour(int n, Edge tour[], int route[]) {
     int *visited = calloc((size_t)n, sizeof(int));
 
@@ -202,11 +189,6 @@ int reconstruct_tour(int n, Edge tour[], int route[]) {
     return 1;
 }
 
-// --------------------------------------------------
-// FORÇA BRUTA
-// --------------------------------------------------
-
-// Variáveis da busca recursiva
 void brute_force_search(
     City cities[],
     int n,
@@ -217,12 +199,9 @@ void brute_force_search(
     double current_cost,
     double *best_cost
 ) {
-    // Poda: não precisamos continuar se já ultrapassamos
-    // o melhor custo encontrado
     if (current_cost >= *best_cost)
         return;
 
-    // Todas as cidades foram visitadas
     if (position == n) {
         double total = current_cost +
             euclidean_distance(cities[route[n - 1]], cities[0]);
@@ -237,14 +216,11 @@ void brute_force_search(
         return;
     }
 
-    // Testa todas as cidades ainda não visitadas
     for (int city = 1; city < n; city++) {
 
         if (visited[city])
             continue;
 
-        // Elimina a orientação inversa da mesma rota.
-        // A última cidade deve ter índice maior que a segunda.
         if (position == n - 1 && city <= route[1])
             continue;
 
@@ -265,12 +241,10 @@ void brute_force_search(
             best_cost
         );
 
-        // Desfaz a escolha para testar outra possibilidade
         visited[city] = 0;
     }
 }
 
-// Executa a força bruta
 int tsp_brute_force(
     City cities[],
     int n,
@@ -286,7 +260,6 @@ int tsp_brute_force(
         return 0;
     }
 
-    // A cidade 0 será sempre o ponto inicial
     route[0] = 0;
     visited[0] = 1;
 
@@ -309,17 +282,12 @@ int tsp_brute_force(
     return isfinite(*best_cost);
 }
 
-// Exibe uma rota
 void print_route(int route[], int n) {
     for (int i = 0; i < n; i++)
         printf("%d -> ", route[i]);
 
     printf("%d\n", route[0]);
 }
-
-// --------------------------------------------------
-// MAIN
-// --------------------------------------------------
 
 int main(void) {
     int n;
@@ -338,7 +306,6 @@ int main(void) {
         return 1;
     }
 
-    // Leitura das coordenadas
     for (int i = 0; i < n; i++) {
         printf("Coordenadas da cidade %d (x y): ", i);
 
@@ -351,7 +318,6 @@ int main(void) {
         }
     }
 
-    // Geração das arestas
     int edge_count;
 
     Edge *edges = generate_edges(cities, n, &edge_count);
@@ -378,7 +344,6 @@ int main(void) {
 
     double greedy_cost;
 
-    // Executa Greedy e mede o tempo
     clock_t start_greedy = clock();
 
     int greedy_success = tsp_cheapest_greedy(
@@ -410,10 +375,6 @@ int main(void) {
 
     printf("Custo: %.6f\n", greedy_cost);
     printf("Tempo: %.6f segundos\n", greedy_time);
-
-    // --------------------------------------------------
-    // Executa a força bruta, se a instância for pequena
-    // --------------------------------------------------
 
     if (n <= MAX_BRUTE_FORCE_CITIES) {
 
@@ -463,7 +424,6 @@ int main(void) {
         printf("Custo otimo: %.6f\n", best_cost);
         printf("Tempo: %.6f segundos\n", brute_time);
 
-        // Comparação dos resultados
         printf("\n======= COMPARACAO =======\n");
 
         if (best_cost > 0.0) {
@@ -483,7 +443,6 @@ int main(void) {
                MAX_BRUTE_FORCE_CITIES);
     }
 
-    // Liberação da memória
     free(cities);
     free(edges);
     free(tour);
